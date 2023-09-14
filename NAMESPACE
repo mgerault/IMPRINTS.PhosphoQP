@@ -1,0 +1,11 @@
+
+export(imprints_phoQP_barplotting)
+export(imprints_phoQP_hit_peptide)
+export(imprints_phoQP_hit_protein)
+export(imprints_phoQP_join)
+export(imprints_phoQP_ksea)
+export(imprints_phoQP_pltformat)
+export(imprints_phospho_rawread)
+export(imprints_QPpep_rawread)
+import(ggplot2)
+import(dplyr)

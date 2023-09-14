@@ -1,0 +1,28 @@
+Package: IMPRINTS.PhosphoQP
+Type: Package
+Title: Process the phosphoproteomics and quantitative proteomics data in a single framework
+Version: 0.1.0
+Author: Marc-Antoine GERAULT
+Maintainer: Marc-Antoine GERAULT <marco.gerault@gmail.com>
+Description: This package is in the continuity of the packages IMPRINTS.CETSA and IMPRINTS.CETSA.app.
+  It allows the user to easily process the phosphoproteomics data and the
+  quantitative proteomics data (peptide and protein level) from Proteome Discoverer. It fits the format 
+  of the packages IMPRINTS.CETSA and IMPRINTS.CETSA.app so the user can also use their functionnalities 
+  with their data.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
+Depends: 
+    R (>= 4.0.0),
+    dplyr (>= 1.1.0),
+    ggplot2 (>= 3.2.0)
+Imports: tidyr, dplyr, plyr, 
+  readr, openxlsx,
+  ggplot2, cowplot, VennDiagram
+Suggests: 
+    IMPRINTS.CETSA,
+    IMPRINTS.CETSA.app,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

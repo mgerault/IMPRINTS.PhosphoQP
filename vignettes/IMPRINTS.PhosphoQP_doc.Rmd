@@ -1,0 +1,308 @@
+---
+title: "Process easily your phosphoproteomics and quantitative proteomics data in the IMPRINTS.CETSA format"
+author: "Marc-Antoine Gerault"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: dark
+    highlight: espresso
+vignette: >
+  %\VignetteIndexEntry{Use the IMPRINTS.PhosphoQP package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction  
+The IMPRINTS.PhosphoQP package depends on the packages IMPRINTS.CETSA and IMPRINTS.CETSA.app, written by Dai Lingyun and Marc-Antoine Gerault. 
+If you're not familiar with these packages, go see their github page [IMPRINTS.CETSA](https://github.com/nkdailingyun/IMPRINTS.CETSA), [IMPRINTS.CETSA.app](https://github.com/mgerault/IMPRINTS.CETSA.app).
+
+In this vignette you'll learn how to use the IMPRINTS.PhosphoQP package in order to easily process your phosphoproteomics and quantitative proteomics data and link them to your potential CETSA data.
+
+--------------------------------------------------------------------------------------------
+
+## Prerequisites
+* R version > 4.0.0 
+* Rstudio version > 1.0
+* Dependent packages:  
+"IMPRINTS.CETSA", "IMPRINTS.CETSA.app", "tidyr", "dplyr", "plyr", "readr", "openxlsx", "ggplot2", "cowplot", "VennDiagram"
+ 
+ 
+The IMPRINTS.CETSA and IMPRINTS.CETSA.app package are currently on github. If you didn't install them yet, type these commands:
+
+```{r, eval=FALSE}
+if(!requireNamespace("devtools", quietly = TRUE)){ #check if you already have the devtools package
+ install.packages("devtools")  #if not, install it
+}
+devtools::install_github("nkdailingyun/IMPRINTS.CETSA")
+devtools::install_github("mgerault/IMPRINTS.CETSA.app")
+```
+
+To install the IMPRINTS.PhosphoQP package (if not already done), you can use the same command :
+```{r, eval=FALSE}
+devtools::install_github("mgerault/IMPRINTS.PhosphoQP")
+```
+
+You can access the same informations (and the source code) on the [github repository](https://github.com/mgerault/IMPRINTS.PhosphoQP)
+
+--------------------------------------------------------------------------------------------
+
+## Set up
+1. For better organization of data analysis, it is __highly recommended__ to use the [Project management feature](https://support.rstudio.com/hc/en-us/articles/200526207-Using-Projects) in Rstudio.   
+For each project, you are suggested to create a brand new working folder as your local working directory.  
+When you will use the package and/or the app inside this directory, all your results will be saved in this directory.
+Indeed, when you will load the package, it will save the path of your working directory under the variable WD.
+You can modify it if you want to quickly change your saving directory, but only do it if you are sure and of course if your file exists.
+
+2. Call `IMPRINTS.PhosphoQP` package   
+
+```{r, message=FALSE, eval=FALSE}
+library("IMPRINTS.PhosphoQP")
+```
+
+--------------------------------------------------
+
+## Analysis
+
+------------------------------------------------
+
+In this example we will import phosphoproteomics data, quantitative proteomics data on the peptide level and on the protein level. We will explore the functionalities of the IMPRINTS.PhosphoQP package throughout these data.
+    
+### $\underline{1.\space Import\space your\space data}$
+  
+
+* Phosphoproteomics data
+
+After analyzing your phosphoproteomics data with Proteome Discoverer, you can import it with the function `imprints_phospho_rawread`.
+         
+```{r, eval=FALSE}
+# the treatment names corresponding to each TMT channel
+treatment <- c("B1_ctrl", "B2_ctrl", "B3_ctrl", 
+               "B1_A", "B2_A", "B3_A",
+               "B1_B", "B2_B", "B3_B",
+               "B1_C", "B2_C", "B3_C",
+               "B1_C", "B2_C", "B3_C",
+               "Mix"
+               )
+# the treatment names needs to follow this type of format --> 'Rep_Condition'
+
+data_phos <- imprints_phospho_rawread("Path/to/Phospho_data.txt",
+                                      treatment)
+```
+  
+* Quantitative proteomics data on the peptide level
+
+You can repeat the last step with your quantitative proteomics data on the peptide level from Proteome Discoverer, using this time the function `imprints_QPpep_rawread`.
+
+```{r, eval=FALSE}
+# the treatment names corresponding to each TMT channel
+treatment <- c("B1_ctrl", "B2_ctrl", "B3_ctrl", 
+               "B1_A", "B2_A", "B3_A",
+               "B1_B", "B2_B", "B3_B",
+               "B1_C", "B2_C", "B3_C",
+               "B1_C", "B2_C", "B3_C",
+               "Mix"
+               )
+# again, the treatment names needs to follow this type of format --> 'Rep_Condition'
+
+data_QPpep <- imprints_QPpep_rawread("Path/to/Phospho_data.txt",
+                                     treatment)
+```
+
+* Quantitative proteomics data on the protein level
+
+For this data, you can follow the instructions described in the `IMPRINTS.CETSA` package.
+
+### $\underline{2.\space Normalization\space and\space fold-change\space calculation}$
+
+For these steps, we can directly use the functions from the `IMPRINTS.CETSA` package since we used the the `IMPRINTS.PhosphoQP` package.
+
+* Phosphoproteomics data
+         
+```{r, eval=FALSE}
+library(IMPRINTS.CETSA)
+
+# normalization
+data_phos_s <- imprints_normalization(data_phos)
+
+# caldiff
+data_phos_s1 <- imprints_caldiff_f(data_phos_s,
+                                   reftreatment = "ctrl")
+```
+  
+* Quantitative proteomics data on the peptide level
+
+
+```{r, eval=FALSE}
+# normalization
+data_QPpep_s <- imprints_normalization(data_QPpep)
+
+# caldiff
+data_QPpep_s1 <- imprints_caldiff_f(data_QPpep_s,
+                                    reftreatment = "ctrl")
+```
+
+
+### $\underline{3.\space Hitlist\space calculation}$
+
+Now that we normalized our data and got their corresponding fold change, we can obtain the significantly more or less abundant peptides between the different treatments.
+For this, we can use the function `imprints_phoQP_hit_peptide` which is based on the function `imprints_IS` from the `IMPRINTS.CETSA.app` package, however this time it's only based one one log2 fold change. Hence, the volcano plot obtained has on the x-axis the log2 fold-change and on the y-axis the p-value from a moderated t-test. An FDR correction is then applied to obtain the cutoffs.
+
+* Phosphoproteomics data
+         
+```{r, eval=FALSE}
+# hits
+data_phos_hits <- imprints_phoQP_hit_peptide(data_phos_s, data_phos_s1, 
+                                             "ctrl",
+                                             FC_cutoff = 0.5, FDR = 0.05)
+```
+  
+* Quantitative proteomics data on the peptide level
+
+```{r, eval=FALSE}
+# hits
+data_QPpep_hits <- imprints_phoQP_hit_peptide(data_QPpep_s, data_QPpep_s1, 
+                                              "ctrl", phospho = FALSE,
+                                              FC_cutoff = 0.5,  FDR = 0.05)
+```
+
+* Quantitative proteomics data on the protein level
+
+Since the function `imprints_IS` from the `IMPRINTS.CETSA.app` package doesn't take into account the QP data, a similar function as `imprints_phoQP_hit_peptide`, `imprints_phoQP_hit_protein`, is in the package `IMPRINTS.PhosphoQP` to obtain the hits from the QP data.
+
+```{r, eval=FALSE}
+# data_QP_s, the normalized QP data
+# data_QP_s1, the fold change from the normalized QP data
+
+# it can also be an IMPRINTS.CETSA dataset containing the QP data
+# you'll need to precise the argument 'QP_name'
+
+# hits
+data_QP_hits <- imprints_phoQP_hit_protein(data_QP_s, data_QP_s1, ctrl = "ctrl",
+                                           FC_cutoff = 0.15, FDR = 0.05,
+                                           QP_name = "36C")
+```
+
+### $\underline{4.\space Plot\space your\space hits}$
+
+To directly use the function `imprints_barplotting_app` from the package `IMPRINTS.CETSA.app`, you can use the function `imprints_phoQP_pltformat` to filter your data and put them in the right format for the plotting function.
+
+* Phosphoproteomics data
+         
+```{r, eval=FALSE}
+#  plot phospho hits
+phospho_hits_toplt <- imprints_phoQP_pltformat(data_phos_s1, 
+                                               hits = data_phos_hits$id,
+                                               reftreatment = "ctrl")
+
+imprints_barplotting_app(phospho_hits_toplt, 
+                        ret_plot = FALSE, save_pdf = TRUE,
+                        pdfname = "Phospho hits")
+```
+  
+* Quantitative proteomics data on the peptide level
+
+```{r, eval=FALSE}
+# plot QP pep hits
+QPpep_hits_toplt <- imprints_phoQP_pltformat(data_QPpep_s1, 
+                                             hits = data_QPpep_hits$id,
+                                             reftreatment = "ctrl")
+imprints_barplotting_app(QPpep_hits_toplt, 
+                         ret_plot = FALSE, save_pdf = TRUE,
+                         pdfname = "QP peptide hits")
+```
+
+
+### $\underline{5.\space Joining\space your\space datasets}$
+
+After processing your different datasets, you might be interested in joining them to plot each peptide barplot next to its corresponding protein barplot. For this you can use the functions `imprints_phoQP_join` and `imprints_phoQP_barplotting`. The function `imprints_phoQP_join` will also indicate you the overlap between your phosphoproteomics data and your quantitative proteomics data on the peptide level.
+
+You have different possibility of joining your datasets :
+
+```{r, eval=FALSE}
+# phospho + QPpep
+data_QPpep_phos <- imprints_phoQP_join(data_phos_s1, data_QPpep_s1)
+
+# phospho + QP
+data_phos_QP <- imprints_phoQP_join(data_phos_s1, QP = data_QP_s1)
+
+# QPpep + QP
+data_QPpep_QP <- imprints_phoQP_join(QPpep = data_QPpep_s1, QP = data_QP_s1)
+
+# phos + QPpep + QP
+data_QPpep_phos_QP <- imprints_phoQP_join(data_phos_s1, data_QPpep_s1, data_QP_s1)
+```
+
+You can also join your dataset with the 'full' method or the 'inner' method. 'inner' means that it will join only the common ids between the different datasets.
+
+```{r, eval=FALSE}
+# phos + QPpep + QP --> inner
+data_QPpep_phos_QP_inner <- imprints_phoQP_join(data_phos_s1, 
+                                                data_QPpep_s1, 
+                                                data_QP_s1,
+                                                method = "inner")
+```
+
+You can check your different datasets and you can now plot them. Check the different plot you can have depending on the dataset:
+
+```{r, eval=FALSE}
+# only QP
+imprints_phoQP_barplotting(data_QP_s1["2112",],
+                           ret_plot = T, save_pdf = F
+                           )
+# QPpep + QP
+imprints_phoQP_barplotting(data_QPpep_QP["23283",],
+                           ret_plot = T, save_pdf = F
+                           )
+
+# phospho + QP
+imprints_phoQP_barplotting(data_phos_QP["3000",],
+                           ret_plot = T, save_pdf = F
+                           )
+
+# QPpep + phospho
+imprints_phoQP_barplotting(data_QPpep_phos["3000",],
+                           ret_plot = T, save_pdf = F
+                           )
+
+# QPpep + phospho + QP
+imprints_phoQP_barplotting(data_QPpep_phos_QP["3000",],
+                           ret_plot = T, save_pdf = F
+                           )
+```
+
+
+You can then for example, plot all the common ids in one pdf like this:
+
+```{r, eval=FALSE}
+imprints_phoQP_barplotting(data_QPpep_phos_QP_inner,
+                           treatmentlevel = c("A", "B", "C", "D"),
+                           colorpanel = c("red", "green", "purple", "yellow"),
+                           ret_plot = FALSE, save_pdf = TRUE,
+                           pdfname = "common_joined"
+                           )
+```
+
+Note that, instead of the 'QP' dataset, you can use an IMPRINTS-CETSA dataset like any `imprints_caldiff` output.
+
+### $\underline{6.\space Using\space KSEA}$
+
+You might be interested in using the [KSEA app](https://casecpb.shinyapps.io/ksea/) for your phosphoproteomics data to perform kinase-substrate enrichment analysis. To use this application, you'll need a file containing for each peptide its corresponding protein id, its gene, its phosphorylation site, its fold-change and its p-value. These information can be obtained from the 'analysis_tab' file obtained when you ran the function `imprints_phoQP_hit_peptide` to get your hits from you phosphoproteomics data (check in your outputs folder).
+
+To get the right files from this 'analysis_tab' in order to use it in the KSEA app, you can use the function `imprints_phoQP_ksea`. If you set the parameter `save` to `TRUE` it will save a csv file for each of your treatment.
+
+```{r, eval=FALSE}
+ksea <- imprints_phoQP_ksea("path_to/analysis_tab.xlsx", TRUE)
+```
+
+You can now directly use these saved files in the KSEA app.
+
+-----------------------------------------
+
+## Details
+If you want more information, remember that you can use the operator '?' and type the name of the function for accessing the documentation. You can also use the function 'View()' to see the source the code or see it on the [github](https://github.com/mgerault/IMPRINTS.PhosphoQP) repository.
+
+## Any questions or bug report ?
+Feel free to send me an [e-mail](mailto:marco.gerault@gmail.com).
