@@ -72,7 +72,7 @@ imprints_QPpep_rawread <- function(data, treatment, contaminant = "Cont"){
   ## renaming columns
   colnames(data)[grep("PSMs$", colnames(data))] <- "sumPSMs"
   
-  colnames(data)[grep("^Abundance:|Abundance F\\d{1,}", colnames(data))] <- treat
+  colnames(data)[grep("^Abundance:|Abundance F\\d{1,}", colnames(data))] <- treatment
   
   colnames(data) <- gsub(" ", ".", colnames(data))
   
@@ -80,7 +80,7 @@ imprints_QPpep_rawread <- function(data, treatment, contaminant = "Cont"){
   
   ## filtering
   # only keep pep with quantitative info
-  data <- data[apply(data[7:ncol(data)], 1, function(x) sum(is.na(x)) < length(treat) - 1),] 
+  data <- data[apply(data[7:ncol(data)], 1, function(x) sum(is.na(x)) < length(treatment) - 1),] 
   
   
   # remove TMT modification information from modifications
