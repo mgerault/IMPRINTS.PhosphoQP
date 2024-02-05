@@ -76,7 +76,11 @@ imprints_phospho_rawread <- function(data, treatment, contaminant = "Cont"){
   
   colnames(data) <- gsub(" ", ".", colnames(data))
   
-  data$Mix <- NULL
+  # removing Mix and/or Empty channels
+  mix_empty <- grep("^Mix|^Empty", colnames(data))
+  if(length(mix_empty)){
+    data <- data[,-mix_empty]
+  }
   
   ## filtering
   # only keep pep with quantitative info
