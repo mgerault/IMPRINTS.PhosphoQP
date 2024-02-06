@@ -265,12 +265,14 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
       for(n in too_long){
         name_toolong <- names(vennlist)[n]
         in_common <- Reduce(intersect, strsplit(strsplit(name_toolong, " & ")[[1]], ""))
-        name_toolong <- stringr::str_remove_all(name_toolong,
-                                       paste(in_common, collapse = "|"))
-        if(stringr::str_length(in_common) > 31){
+        if(length(in_common)){
+          name_toolong <- stringr::str_remove_all(name_toolong,
+                                         paste(in_common, collapse = "|"))
+        }
+        if(stringr::str_length(name_toolong) > 31){
           name_toolong <- stringr::str_remove_all(name_toolong, " ")
         }
-        if(stringr::str_length(in_common) > 31){
+        if(stringr::str_length(name_toolong) > 31){
           name_toolong <- paste0("&", name_toolong, "&")
           name_toolong <- stringr::str_remove_all(name_toolong, "(?<=&[a-zA-Z]).+?(?=&)")
           name_toolong <-  stringr::str_remove_all(name_toolong, "^&|&$")
