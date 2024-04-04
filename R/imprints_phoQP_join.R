@@ -214,24 +214,26 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
 
   if(!is.null(data$Modifications)){
     modif_pos <- mapply(function(org, pos){
-      if(nchar(pos)){
-        org <- as.numeric(gsub("\\[|-.*", "", org)) - 1
+      if(!is.na(pos)){
+        if(nchar(pos)){
+          org <- as.numeric(gsub("\\[|-.*", "", org)) - 1
 
-        pos_char <- paste(regmatches(pos,  gregexpr("\\[.*?\\]", pos))[[1]], collapse = " ")
-        pos_char <-  regmatches(pos_char,  gregexpr("\\D{1}\\d{1,2}?(\\]|; )", pos_char))[[1]]
-        if(length(pos_char)){
-          pos_num <- as.numeric(gsub("\\D", "", pos_char))
-          pos_num_new <- pos_num + org
+          pos_char <- paste(regmatches(pos,  gregexpr("\\[.*?\\]", pos))[[1]], collapse = " ")
+          pos_char <-  regmatches(pos_char,  gregexpr("\\D{1}\\d{1,2}?(\\]|; )", pos_char))[[1]]
+          if(length(pos_char)){
+            pos_num <- as.numeric(gsub("\\D", "", pos_char))
+            pos_num_new <- pos_num + org
 
-          pos_modif <- mapply(function(old, new, oldchr){
-            sub(old, new, oldchr)
-          },
-          as.character(pos_num), as.character(pos_num_new), pos_char,
-          SIMPLIFY = FALSE)
+            pos_modif <- mapply(function(old, new, oldchr){
+              sub(old, new, oldchr)
+            },
+            as.character(pos_num), as.character(pos_num_new), pos_char,
+            SIMPLIFY = FALSE)
 
-          pos_char <- gsub("\\]", "\\\\]", pos_char)
-          for(i in 1:length(pos_char)){
-            pos <- sub(pos_char[i], pos_modif[i], pos)
+            pos_char <- gsub("\\]", "\\\\]", pos_char)
+            for(i in 1:length(pos_char)){
+              pos <- sub(pos_char[i], pos_modif[i], pos)
+            }
           }
         }
       };
@@ -244,24 +246,26 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
 
   if(!is.null(data$phospho.site)){
     pho_pos <- mapply(function(org, pos){
-      if(nchar(pos)){
-        org <- as.numeric(gsub("\\[|-.*", "", org)) - 1
+      if(!is.na(pos)){
+        if(nchar(pos)){
+          org <- as.numeric(gsub("\\[|-.*", "", org)) - 1
 
-        pos_char <- regmatches(pos,  gregexpr("\\[.*?\\]", pos))[[1]]
-        pos_char <-  regmatches(pos_char,  gregexpr("\\D{1}\\d{1,2}?\\(", pos_char))[[1]]
-        if(length(pos_char)){
-          pos_num <- as.numeric(gsub("\\D", "", pos_char))
-          pos_num_new <- pos_num + org
+          pos_char <- regmatches(pos,  gregexpr("\\[.*?\\]", pos))[[1]]
+          pos_char <-  regmatches(pos_char,  gregexpr("\\D{1}\\d{1,2}?\\(", pos_char))[[1]]
+          if(length(pos_char)){
+            pos_num <- as.numeric(gsub("\\D", "", pos_char))
+            pos_num_new <- pos_num + org
 
-          pos_modif <- mapply(function(old, new, oldchr){
-            sub(old, new, oldchr)
-          },
-          as.character(pos_num), as.character(pos_num_new), pos_char,
-          SIMPLIFY = FALSE)
+            pos_modif <- mapply(function(old, new, oldchr){
+              sub(old, new, oldchr)
+            },
+            as.character(pos_num), as.character(pos_num_new), pos_char,
+            SIMPLIFY = FALSE)
 
-          pos_char <- gsub("\\(", "\\\\(", pos_char)
-          for(i in 1:length(pos_char)){
-            pos <- sub(pos_char[i], pos_modif[i], pos)
+            pos_char <- gsub("\\(", "\\\\(", pos_char)
+            for(i in 1:length(pos_char)){
+              pos <- sub(pos_char[i], pos_modif[i], pos)
+            }
           }
         }
       };
