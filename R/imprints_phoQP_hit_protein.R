@@ -168,7 +168,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
   if(fixed_score_cutoff){
     cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
       dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
-      dplyr::reframe(pval = find_cutoff(pval, BH),
+      dplyr::reframe(BH = find_cutoff(pval, BH),
                      FC_pos = FC_cutoff,
                      FC_neg = -FC_cutoff)
   }
