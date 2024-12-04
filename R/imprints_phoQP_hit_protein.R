@@ -8,6 +8,11 @@
 #' @param ctrl The name of the control.
 #' @param QP_name The name of the QP columns; default is 36C
 #' @param FC_cutoff The fold change cutoff.
+#' @param fixed_score_cutoff Logical to tell if you want to use a fixed cutoff for the I-score.
+#'   If TRUE, the value IS_cutoff will directly be used as the cutoff and for all treatments. If FALSE,
+#'   the I-score cutoff will be calculated as the value selected for IS_cutoff plus the median of the
+#'   I-scores of the proteins which have a p-value lower than the median of all p-values for a given treatment.
+#'   Default is TRUE.
 #' @param curvature The curvature used for the curve on the volcano plot
 #' @param FDR The FDR used for the BH corrected combined p-value
 #' @param folder_name The name of the folder in which you want to save the results.
@@ -21,7 +26,7 @@
 #' @export
 
 imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "36C",
-                                       FC_cutoff = 0.2,
+                                       FC_cutoff = 0.2, fixed_score_cutoff = TRUE,
                                        FDR = 0.05, curvature = 0.1,
                                        folder_name = "QPHits_analysis",
                                        peptide_count_col = "peptides_counts_all",
@@ -160,11 +165,20 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
   diff_FC_plot <- tidyr::spread(diff_FC_plot, Value, reading)
   diff_FC_plot$treatment <- factor(diff_FC_plot$treatment)
 
-  cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
-    dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
-    dplyr::summarise(BH = find_cutoff(pval, BH),
-                     FC_pos = FC_cutoff + median(FC[which(pval < quantile(pval, 0.5, na.rm = TRUE))], na.rm = TRUE),
-                     FC_neg = -FC_cutoff - median(FC[which(pval < quantile(pval, 0.5, na.rm = TRUE))], na.rm = TRUE))
+  if(fixed_score_cutoff){
+    cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
+      dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
+      dplyr::reframe(pval = find_cutoff(pval, BH),
+                     FC_pos = FC_cutoff,
+                     FC_neg = -FC_cutoff)
+  }
+  else{
+    cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
+      dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
+      dplyr::summarise(BH = find_cutoff(pval, BH),
+                       FC_pos = FC_cutoff + median(FC[which(pval < quantile(pval, 0.5, na.rm = TRUE))], na.rm = TRUE),
+                       FC_neg = -FC_cutoff - median(FC[which(pval < quantile(pval, 0.5, na.rm = TRUE))], na.rm = TRUE))
+  }
 
   cutoff_file <- paste0(outdir, "/", format(Sys.time(), "%y%m%d_%H%M"), "_", "cutoff.txt")
   readr::write_tsv(cutoff, cutoff_file)
@@ -267,7 +281,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
         in_common <- Reduce(intersect, strsplit(strsplit(name_toolong, " & ")[[1]], ""))
         if(length(in_common)){
           name_toolong <- stringr::str_remove_all(name_toolong,
-                                         paste(in_common, collapse = "|"))
+                                                  paste(in_common, collapse = "|"))
         }
         if(stringr::str_length(name_toolong) > 31){
           name_toolong <- stringr::str_remove_all(name_toolong, " ")

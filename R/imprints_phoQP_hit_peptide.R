@@ -9,6 +9,11 @@
 #' @param ctrl The name of the control.
 #' @param phospho Is your data of phosphoproteomics type. If not, should be quantiative proteomics.
 #' @param FC_cutoff The fold change cutoff
+#' @param fixed_score_cutoff Logical to tell if you want to use a fixed cutoff for the I-score.
+#'   If TRUE, the value IS_cutoff will directly be used as the cutoff and for all treatments. If FALSE,
+#'   the I-score cutoff will be calculated as the value selected for IS_cutoff plus the median of the
+#'   I-scores of the proteins which have a p-value lower than the median of all p-values for a given treatment.
+#'   Default is TRUE.
 #' @param curvature The curvature used for the curve on the volcano plot
 #' @param FDR The FDR used for the BH corrected combined p-value
 #' @param folder_name The name of the folder in which you want to save the results.
@@ -23,7 +28,7 @@
 
 imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
                               phospho = TRUE,
-                              FC_cutoff = 0.5,
+                              FC_cutoff = 0.5, fixed_score_cutoff = TRUE,
                               FDR = 0.01, curvature = 0.1,
                               folder_name = ifelse(phospho, "PhosphoHits_analysis", "QPpeptideHits_analysis"),
                               peptide_count_col = "peptides_counts_all",
@@ -150,11 +155,20 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
   diff_FC_plot <- tidyr::spread(diff_FC_plot, Value, reading)
   diff_FC_plot$treatment <- factor(diff_FC_plot$treatment)
 
-  cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
-    dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
-    dplyr::summarise(BH = find_cutoff(pval, BH),
-                     FC_pos = FC_cutoff + median(FC[which(pval < quantile(pval, 0.5))], na.rm = TRUE),
-                     FC_neg = -FC_cutoff - median(FC[which(pval < quantile(pval, 0.5))], na.rm = TRUE))
+  if(fixed_score_cutoff){
+    cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
+      dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
+      dplyr::reframe(pval = find_cutoff(pval, BH),
+                     FC_pos = FC_cutoff,
+                     FC_neg = -FC_cutoff)
+  }
+  else{
+    cutoff <- diff_FC_plot %>% dplyr::group_by(treatment) %>%
+      dplyr::mutate(BH = (order(order(pval))/length(pval))*FDR) %>%
+      dplyr::summarise(BH = find_cutoff(pval, BH),
+                       FC_pos = FC_cutoff + median(FC[which(pval < quantile(pval, 0.5, na.rm = TRUE))], na.rm = TRUE),
+                       FC_neg = -FC_cutoff - median(FC[which(pval < quantile(pval, 0.5, na.rm = TRUE))], na.rm = TRUE))
+  }
 
   cutoff_file <- paste0(outdir, "/", format(Sys.time(), "%y%m%d_%H%M"), "_", "cutoff.txt")
   readr::write_tsv(cutoff, cutoff_file)
@@ -189,7 +203,7 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
     geom_point() +
     geom_line(data = df_curve, aes(x = FC, y = curve), linetype = "dashed", color = "black") +
     ylim(c(0, max(-log10(diff_FC_plot$pval)))) +
-    labs(title = paste("Volcano plot -", 
+    labs(title = paste("Volcano plot -",
                        ifelse(phospho, "phospho peptides", "QP peptides")),
          y = "-log10(p-value)",
          x = "Fold Change") +
@@ -215,8 +229,8 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
     geom_point(aes(text = paste0("p-value: ", diff_FC_plot$pval, "\n",
                                  "FC: ", diff_FC_plot$FC, "\n",
                                  "Peptide sequence: ", sub("_.*", "", diff_FC_plot$id), "\n",
-                                 ifelse(phospho, 
-                                        paste0("Phospho site: ", 
+                                 ifelse(phospho,
+                                        paste0("Phospho site: ",
                                                unlist(lapply(strsplit(diff_FC_plot$Modifications, "]; "),
                                                              function(y){
                                                                y <- y[grep("Phospho", y)];
@@ -232,7 +246,7 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
     ) +
     geom_line(data = df_curve, aes(x = FC, y = curve), linetype = "dashed", color = "black") +
     ylim(c(0, max(-log10(diff_FC_plot$pval)))) +
-    labs(title = paste("Volcano plot -", 
+    labs(title = paste("Volcano plot -",
                        ifelse(phospho, "phospho peptides", "QP peptides")),
          y = "-log10(p-value)",
          x = "Fold Change") +
