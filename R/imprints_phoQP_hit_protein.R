@@ -217,11 +217,15 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
          y = "-log10(p-value)",
          x = "Fold Change") +
     scale_color_manual(values = c("TRUE" = "red", "FALSE" = "grey70"))  +
-    theme(plot.title = element_text(hjust = 0.5)) +
     facet_wrap(~treatment) +
     ggrepel::geom_label_repel(data = diff_FC_plot[diff_FC_plot$criteria_curve,],
                               aes(FC, -log10(pval),
-                                  label = Genes), show.legend = FALSE)
+                                  label = Genes), show.legend = FALSE) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none",
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(face = "bold"))
 
   ggsave(paste0(format(Sys.time(), "%y%m%d_%H%M"), "_", "hits_plot.png"),
          plot = g_h,
@@ -243,8 +247,12 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
          y = "-log10(p-value)",
          x = "FC") +
     scale_color_manual(values = c("TRUE" = "red", "FALSE" = "grey70"))  +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    facet_wrap(~treatment)
+    facet_wrap(~treatment) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none",
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(face = "bold"))
 
   g_I <- plotly::ggplotly(g_I, tooltip = "text", width = 1080, height = 560)
   htmltools::save_html(g_I, paste0(outdir, "/", format(Sys.time(), "%y%m%d_%H%M"), "_", "hits_plotInt.html"))
