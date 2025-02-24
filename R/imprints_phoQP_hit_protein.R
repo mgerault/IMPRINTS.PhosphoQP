@@ -158,7 +158,6 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
   colnames(info) <- c("id", "Gene", "peptide_count")
   diff_FC <- as.data.frame(cbind(info, diff_FC))
 
-  return(diff_FC)
   diff_FC_plot <- diff_FC[,c("id", "Gene", grep("^\\d{2}|^pval_", colnames(diff_FC), value = TRUE))]
   colnames(diff_FC_plot) <- gsub("^\\d{2}", "F", colnames(diff_FC_plot))
   diff_FC_plot <- tidyr::gather(diff_FC_plot, treatment, reading, -id, -Gene) %>%
