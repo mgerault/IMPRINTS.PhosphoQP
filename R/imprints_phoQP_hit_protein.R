@@ -38,31 +38,31 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
   }
 
   n <- nrow(data)
-  name_cond <- stringr::str_subset(colnames(data), "^\\d{2}")
+  name_cond <- grep("^\\d{2}", colnames(data), value = TRUE)
   if(ncol(data) - length(name_cond) != 5){
     stop("Your data must have 5 information columns,
-          like 'id', 'description', 'genes', 'peptide_count' and 'protein_names' for example.")
+          like 'id', 'description', 'Gene', 'peptide_count' and 'protein_names' for example.")
   }
-  cond <- stringr::str_split(name_cond, "_")
+  cond <- strsplit(name_cond, "_")
   cond <- unique(unlist(lapply(cond, function(x) x[3])))
   if(!(ctrl %in% cond)){
     stop("'ctrl' is not in the conditions. Please, check spelling or column names.")
   }
   cond <- cond[-which(cond == ctrl)]
 
-  temp <- stringr::str_split(name_cond, "_")
+  temp <- strsplit(name_cond, "_")
   temp <- unique(unlist(lapply(temp, function(x) x[1])))
   if(!(QP_name %in% temp)){
     stop(paste(QP_name, "is not in your data ! Check your spelling"))
   }
   if(length(temp) > 1){
     temp_torm <- temp[!(temp %in% QP_name)]
-    data <- data[,-stringr::str_which(colnames(data), paste(paste0("^", temp_torm, "_"), collapse = "|"))]
+    data <- data[,-grep(paste(paste0("^", temp_torm, "_"), collapse = "|"), colnames(data))]
     if(!is.null(data_diff)){
-      data_diff <- data_diff[,-stringr::str_which(colnames(data_diff), paste(paste0("^", temp_torm, "_"), collapse = "|"))]
+      data_diff <- data_diff[,-grep(paste(paste0("^", temp_torm, "_"), collapse = "|"), colnames(data_diff))]
     }
     temp <- QP_name
-    name_cond <- stringr::str_subset(colnames(data), "^\\d{2}")
+    name_cond <- grep("^\\d{2}", colnames(data), value = TRUE)
   }
 
   if(is.null(data_diff)){
@@ -72,7 +72,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
       while(length(to_describe) != 2 & all(!(to_describe %in% colnames(data)))){
         to_describe <- readline(prompt = "Type the column name of the description you want to keep in first and the gene column name in second; separated by 2 spaces"
         )
-        to_describe <- stringr::str_split(to_describe, "  ")[[1]]
+        to_describe <- strsplit(to_describe, "  ")[[1]]
 
         if(length(to_describe) != 2){
           print("Separate the columns names by 2 spaces")
@@ -89,12 +89,12 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
       colnames(data_diff)[which(colnames(data_diff) == peptide_count_col)] <- "sumUniPeps"
     }
     message("Getting fold change...")
-    colnames(data_diff)[-stringr::str_which(colnames(data_diff), "^\\d{1,}|description|sumUniPeps")] <- c("id", "sumPSMs", "countNum")
+    colnames(data_diff)[-grep("^\\d{1,}|description|sumUniPeps", colnames(data_diff))] <- c("id", "sumPSMs", "countNum")
     data_diff <- data_diff[, c("id", "description", name_cond, "sumUniPeps", "sumPSMs", "countNum")]
     data_diff <- IMPRINTS.CETSA::imprints_caldiff_f(data_diff, reftreatment =  ctrl)
   }
   else if("character" %in% class(data_diff)){
-    if(stringr::str_detect(data_diff, "\\.tsv$|\\.csv$|\\.txt$"))
+    if(grepl("\\.tsv$|\\.csv$|\\.txt$", data_diff))
       data_diff <- readr::read_tsv(data_diff)
     else
       stop("Format isn't recognize")
@@ -124,7 +124,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
 
   message("Computing mean values...")
   # get average value among bioreplicate for each protein
-  diff_FC <- data_diff[,-stringr::str_which(colnames(data_diff), paste0("_", ctrl, "$"))]
+  diff_FC <- data_diff[,-grep(paste0("_", ctrl, "$"), colnames(data_diff))]
   diff_FC <- tidyr::gather(diff_FC, treatment, reading, -id, -description, -sumUniPeps, -sumPSMs, -countNum)
   diff_FC <- tidyr::separate(diff_FC, treatment, into = c("temperature",
                                                           "replicate", "treatment"), sep = "_")
@@ -139,11 +139,11 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
   for(k in cond){
     message(k)
     res <- list()
-    M <- data[,stringr::str_which(colnames(data), paste0("_", ctrl, "$|_", k, "$"))]
+    M <- data[,grep(paste0("_", ctrl, "$|_", k, "$"), colnames(data))]
     for(i in temp){
       message(i)
-      X <- M[,stringr::str_which(colnames(M), paste0("^", i, "_"))]
-      grp <- unname(sapply(colnames(X), function(x) stringr::str_split(x, "_")[[1]][3]))
+      X <- M[,grep(paste0("^", i, "_"), colnames(M))]
+      grp <- unname(sapply(colnames(X), function(x) strsplit(x, "_")[[1]][3]))
 
       res[[i]] <- MKmisc::mod.t.test(as.matrix(X),
                                      group = factor(grp),
@@ -154,15 +154,16 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
 
   diff_FC <- diff_FC[,-c(1:2)]
   info <- data_diff[,c("id", "description", "sumUniPeps")]
-  info$description <- stringr::str_extract(paste0(info$description, " "), "(?<=GN=).+?(?= )") # extract genes
-  colnames(info) <- c("id", "Genes", "peptide_count")
+  info$description <- sub(" .*", "", sub(".*GN=", "", paste0(info$description, " "))) # extract Gene
+  colnames(info) <- c("id", "Gene", "peptide_count")
   diff_FC <- as.data.frame(cbind(info, diff_FC))
 
-  diff_FC_plot <- diff_FC[,c("id", "Genes", stringr::str_subset(colnames(diff_FC), "^\\d{2}|^pval_"))]
-  colnames(diff_FC_plot) <- stringr::str_replace_all(colnames(diff_FC_plot), "^\\d{2}", "F")
-  diff_FC_plot <- tidyr::gather(diff_FC_plot, treatment, reading, -id, -Genes)
-  diff_FC_plot <- tidyr::separate(diff_FC_plot, treatment, into = c("Value", "treatment"))
-  diff_FC_plot <- tidyr::spread(diff_FC_plot, Value, reading)
+  return(diff_FC)
+  diff_FC_plot <- diff_FC[,c("id", "Gene", grep("^\\d{2}|^pval_", colnames(diff_FC), value = TRUE))]
+  colnames(diff_FC_plot) <- gsub("^\\d{2}", "F", colnames(diff_FC_plot))
+  diff_FC_plot <- tidyr::gather(diff_FC_plot, treatment, reading, -id, -Gene) %>%
+    tidyr::separate(treatment, into = c("value", "treatment"), sep = "_") %>%
+    tidyr::spread(value, reading)
   diff_FC_plot$treatment <- factor(diff_FC_plot$treatment)
 
   if(fixed_score_cutoff){
@@ -186,7 +187,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
   write(extra_info, cutoff_file, sep = "\n", append = TRUE)
 
 
-  diff_FC_plot <- diff_FC_plot %>% dplyr::group_by(id, Genes, treatment) %>%
+  diff_FC_plot <- diff_FC_plot %>% dplyr::group_by(id, Gene, treatment) %>%
     dplyr::mutate(criteria = pval <= cutoff$BH[which(cutoff$treatment == treatment)] &
                     (FC >= cutoff$FC_pos[which(cutoff$treatment == treatment)] | FC <= cutoff$FC_neg[which(cutoff$treatment == treatment)]),
                   curve = curve(FC, cutoff$FC_neg[which(cutoff$treatment == treatment)],
@@ -220,7 +221,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
     facet_wrap(~treatment) +
     ggrepel::geom_label_repel(data = diff_FC_plot[diff_FC_plot$criteria_curve,],
                               aes(FC, -log10(pval),
-                                  label = Genes), show.legend = FALSE) +
+                                  label = Gene), show.legend = FALSE) +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5),
           legend.position = "none",
@@ -239,7 +240,7 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
     geom_point(aes(text = paste0("p-value: ", diff_FC_plot$pval, "\n",
                                  "FC: ", diff_FC_plot$FC, "\n",
                                  "Protein: ", diff_FC_plot$id, "\n",
-                                 "Genes: ", diff_FC_plot$Genes)
+                                 "Gene: ", diff_FC_plot$Gene)
                    )) +
     geom_line(data = df_curve, aes(x = FC, y = curve), linetype = "dashed", color = "black") +
     ylim(c(0, max(-log10(diff_FC_plot$pval), na.rm = TRUE))) +
@@ -282,32 +283,31 @@ imprints_phoQP_hit_protein <- function(data, data_diff = NULL, ctrl, QP_name = "
                               cat.fontface = "bold",
                               cat.fontfamily = "sans")
     vennlist <- IMPRINTS.CETSA.app::com_protein_loop(vennlist)
-    too_long <- which(sapply(names(vennlist), stringr::str_length) > 31)
+    too_long <- which(sapply(names(vennlist), nchar) > 31)
     if(length(too_long)){
       for(n in too_long){
         name_toolong <- names(vennlist)[n]
         in_common <- Reduce(intersect, strsplit(strsplit(name_toolong, " & ")[[1]], ""))
         if(length(in_common)){
-          name_toolong <- stringr::str_remove_all(name_toolong,
-                                                  paste(in_common, collapse = "|"))
+          name_toolong <- gsub(paste(in_common, collapse = "|"), "", name_toolong)
         }
-        if(stringr::str_length(name_toolong) > 31){
-          name_toolong <- stringr::str_remove_all(name_toolong, " ")
+        if(nchar(name_toolong) > 31){
+          name_toolong <- gsub(" ", "", name_toolong)
         }
-        if(stringr::str_length(name_toolong) > 31){
+        if(nchar(name_toolong) > 31){
           name_toolong <- paste0("&", name_toolong, "&")
-          name_toolong <- stringr::str_remove_all(name_toolong, "(?<=&[a-zA-Z]).+?(?=&)")
-          name_toolong <-  stringr::str_remove_all(name_toolong, "^&|&$")
+          name_toolong <- gsub("(?<=&[a-zA-Z]).+?(?=&)", "", name_toolong, perl = TRUE)
+          name_toolong <-  gsub("^&|&$", "", name_toolong)
         }
         names(vennlist)[n] <- name_toolong
       }
     }
     for(i in 1:length(vennlist)){
       prot <- data.frame("id" = vennlist[[i]],
-                         "Genes" = info$Genes[which(!is.na(match(info$id,
+                         "Gene" = info$Gene[which(!is.na(match(info$id,
                                                                  vennlist[[i]])))]
       )
-      score_info <- diff_FC[,c(1, stringr::str_which(colnames(diff_FC), "^FC_|^pval_"))]
+      score_info <- diff_FC[,c(1, grep("^FC_|^pval_", colnames(diff_FC)))]
 
       vennlist[[i]] <- dplyr::left_join(prot, score_info, by = "id")
     }

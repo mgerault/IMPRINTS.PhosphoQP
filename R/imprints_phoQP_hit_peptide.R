@@ -40,19 +40,19 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
   }
 
   n <- nrow(data)
-  name_cond <- stringr::str_subset(colnames(data), "^\\d{2}")
+  name_cond <- grep("^\\d{2}", colnames(data), value = TRUE)
   if(ncol(data) - length(name_cond) != 5){
     stop("Your data must have 5 information columns,
           like 'id', 'description', 'genes', 'peptide_count' and 'protein_names' for example.")
   }
-  cond <- stringr::str_split(name_cond, "_")
+  cond <- strsplit(name_cond, "_")
   cond <- unique(unlist(lapply(cond, function(x) x[3])))
   if(!(ctrl %in% cond)){
     stop("'ctrl' is not in the conditions. Please, check spelling or column names.")
   }
   cond <- cond[-which(cond == ctrl)]
 
-  temp <- stringr::str_split(name_cond, "_")
+  temp <- strsplit(name_cond, "_")
   temp <- unique(unlist(lapply(temp, function(x) x[1])))
 
   if(is.null(data_diff)){
@@ -62,7 +62,7 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
       while(length(to_describe) != 2 & all(!(to_describe %in% colnames(data)))){
         to_describe <- readline(prompt = "Type the column name of the description you want to keep in first and the gene column name in second; separated by 2 spaces"
         )
-        to_describe <- stringr::str_split(to_describe, "  ")[[1]]
+        to_describe <- strsplit(to_describe, "  ")[[1]]
 
         if(length(to_describe) != 2){
           print("Separate the columns names by 2 spaces")
@@ -79,12 +79,12 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
       colnames(data_diff)[which(colnames(data_diff) == peptide_count_col)] <- "sumUniPeps"
     }
     message("Getting fold change...")
-    colnames(data_diff)[-stringr::str_which(colnames(data_diff), "^\\d{1,}|description|sumUniPeps")] <- c("id", "sumPSMs", "countNum")
+    colnames(data_diff)[-grep("^\\d{1,}|description|sumUniPeps", colnames(data_diff))] <- c("id", "sumPSMs", "countNum")
     data_diff <- data_diff[, c("id", "description", name_cond, "sumUniPeps", "sumPSMs", "countNum")]
     data_diff <- IMPRINTS.CETS::imprints_caldiff_f(data_diff, reftreatment = ctrl)
   }
   else if("character" %in% class(data_diff)){
-    if(stringr::str_detect(data_diff, "\\.tsv$|\\.csv$|\\.txt$"))
+    if(grepl("\\.tsv$|\\.csv$|\\.txt$", data_diff))
       data_diff <- readr::read_tsv(data_diff)
     else
       stop("Format isn't recognize")
@@ -114,7 +114,7 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
 
   message("Computing mean values...")
   # get average value among bioreplicate for each protein
-  diff_FC <- data_diff[,-stringr::str_which(colnames(data_diff), paste0("_", ctrl, "$"))]
+  diff_FC <- data_diff[,-grep(paste0("_", ctrl, "$"), colnames(data_diff))]
   diff_FC <- tidyr::gather(diff_FC, treatment, reading, -id, -description, -sumUniPeps, -sumPSMs, -countNum)
   diff_FC <- tidyr::separate(diff_FC, treatment, into = c("temperature",
                                                           "replicate", "treatment"), sep = "_")
@@ -129,11 +129,11 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
   for(k in cond){
     message(k)
     res <- list()
-    M <- data[,stringr::str_which(colnames(data), paste0("_", ctrl, "$|_", k, "$"))]
+    M <- data[,grep(paste0("_", ctrl, "$|_", k, "$"), colnames(data))]
     for(i in temp){
       message(i)
-      X <- M[,stringr::str_which(colnames(M), paste0("^", i, "_"))]
-      grp <- unname(sapply(colnames(X), function(x) stringr::str_split(x, "_")[[1]][3]))
+      X <- M[,grep(paste0("^", i, "_"), colnames(M))]
+      grp <- unname(sapply(colnames(X), function(x) strsplit(x, "_")[[1]][3]))
 
       res[[i]] <- MKmisc::mod.t.test(as.matrix(X),
                                      group = factor(grp),
@@ -148,11 +148,12 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
   colnames(info) <- c("id", "Position.in.protein", "Modifications", "description")
   diff_FC <- as.data.frame(cbind(info, diff_FC))
 
-  diff_FC_plot <- diff_FC[,c("id", "Position.in.protein", "Modifications", "description", stringr::str_subset(colnames(diff_FC), "^\\d{2}|^pval_"))]
-  colnames(diff_FC_plot) <- stringr::str_replace_all(colnames(diff_FC_plot), "\\d{2}", "F")
-  diff_FC_plot <- tidyr::gather(diff_FC_plot, treatment, reading, -id, -Position.in.protein, -Modifications, -description)
-  diff_FC_plot <- tidyr::separate(diff_FC_plot, treatment, into = c("Value", "treatment"))
-  diff_FC_plot <- tidyr::spread(diff_FC_plot, Value, reading)
+  diff_FC_plot <- diff_FC[,c("id", "Position.in.protein", "Modifications", "description", grep("^\\d{2}|^pval_", colnames(diff_FC), value = TRUE))]
+  colnames(diff_FC_plot) <- gsub("\\d{2}", "F", colnames(diff_FC_plot))
+  diff_FC_plot <- tidyr::gather(diff_FC_plot, treatment, reading, -id, -Position.in.protein,
+                                -Modifications, -description) %>%
+    tidyr::separate(treatment, into = c("value", "treatment"), sep = "_") %>%
+    tidyr::spread(value, reading)
   diff_FC_plot$treatment <- factor(diff_FC_plot$treatment)
 
   if(fixed_score_cutoff){
@@ -291,20 +292,19 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
                               cat.fontface = "bold",
                               cat.fontfamily = "sans")
     vennlist <- IMPRINTS.CETSA.app::com_protein_loop(vennlist)
-    too_long <- which(sapply(names(vennlist), stringr::str_length) > 31)
+    too_long <- which(sapply(names(vennlist), nchar) > 31)
     if(length(too_long)){
       for(n in too_long){
         name_toolong <- names(vennlist)[n]
-        in_common <- Reduce(intersect, stringr::str_split(stringr::str_split(name_toolong, " & ")[[1]], ""))
-        name_toolong <- stringr::str_remove_all(name_toolong,
-                                       paste(in_common, collapse = "|"))
-        if(stringr::str_length(in_common) > 31){
-          name_toolong <- stringr::str_remove_all(name_toolong, " ")
+        in_common <- Reduce(intersect, strsplit(strsplit(name_toolong, " & ")[[1]], ""))
+        name_toolong <- gsub(paste(in_common, collapse = "|"), "", name_toolong)
+        if(nchar(in_common) > 31){
+          name_toolong <- gsub(" ", "", name_toolong)
         }
-        if(stringr::str_length(in_common) > 31){
+        if(nchar(in_common) > 31){
           name_toolong <- paste0("&", name_toolong, "&")
-          name_toolong <- stringr::str_remove_all(name_toolong, "(?<=&[a-zA-Z]).+?(?=&)")
-          name_toolong <-  stringr::str_remove_all(name_toolong, "^&|&$")
+          name_toolong <- gsub("(?<=&[a-zA-Z]).+?(?=&)", "", name_toolong, perl = TRUE)
+          name_toolong <-  gsub("^&|&$", "", name_toolong)
         }
         names(vennlist)[n] <- name_toolong
       }
@@ -318,7 +318,7 @@ imprints_phoQP_hit_peptide <- function(data, data_diff = NULL, ctrl,
                          "description" = info$description[which(!is.na(match(info$id,
                                                                                vennlist[[i]])))]
                          )
-      score_info <- diff_FC[,c(1, stringr::str_which(colnames(diff_FC), "^FC_|^pval_"))]
+      score_info <- diff_FC[,c(1, grep("^FC_|^pval_", colnames(diff_FC)))]
 
       vennlist[[i]] <- dplyr::left_join(prot, score_info, by = "id")
     }
