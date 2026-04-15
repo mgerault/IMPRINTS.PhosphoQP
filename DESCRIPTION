@@ -1,7 +1,7 @@
 Package: IMPRINTS.PhosphoQP
 Type: Package
 Title: Process the phosphoproteomics and quantitative proteomics data in a single framework
-Version: 1.1
+Version: 2.0
 Author: Marc-Antoine GERAULT
 Maintainer: Marc-Antoine GERAULT <marco.gerault@gmail.com>
 Description: This package is in the continuity of the packages IMPRINTS.CETSA and IMPRINTS.CETSA.app.
@@ -12,7 +12,7 @@ Description: This package is in the continuity of the packages IMPRINTS.CETSA an
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 4.0.0),
     dplyr (>= 1.1.0),
