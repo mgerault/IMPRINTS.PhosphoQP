@@ -55,8 +55,9 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
       ## merge phospho and QP peptide
       # prepare phospho
       phospho <- data_list$phospho
-      colnames(phospho)[c(ncol(phospho) - 1, ncol(phospho))] <- paste0(colnames(phospho)[c(ncol(phospho) - 1, ncol(phospho))],
-                                                                       ".phospho")
+      extra_info <- grep("sumPSMs|countNum", colnames(phospho))
+      if(length(extra_info))
+        colnames(phospho)[extra_info] <- paste0(colnames(phospho)[extra_info], ".phospho")
 
       phospho$Phosphorylation <- sapply(strsplit(phospho$Modifications, "\\]; "),
                                         function(x){
@@ -80,8 +81,10 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
 
       # prepare QPpep
       QPpep <- data_list$QPpep
-      colnames(QPpep)[c(ncol(QPpep) - 1, ncol(QPpep))] <- paste0(colnames(QPpep)[c(ncol(QPpep) - 1, ncol(QPpep))],
-                                                                       ".QPpep")
+      extra_info <- grep("sumPSMs|countNum", colnames(QPpep))
+      if(length(extra_info))
+        colnames(QPpep)[extra_info] <- paste0(colnames(QPpep)[extra_info], ".QPpep")
+
       QPpep$Modifications <- tidyr::replace_na(QPpep$Modifications, "") # NAs prevent correct join with Phospho data
 
       # join phospho and QPpep
@@ -110,8 +113,9 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
       data <- data_list[[peptide_type]]
 
       if(peptide_type == "phospho"){
-        colnames(data)[c(ncol(data) - 1, ncol(data))] <- paste0(colnames(data)[c(ncol(data) - 1, ncol(data))],
-                                                                ".phospho")
+        extra_info <- grep("sumPSMs|countNum", colnames(data))
+        if(length(extra_info))
+          colnames(data)[extra_info] <- paste0(colnames(data)[extra_info], ".phospho")
 
         data$Phosphorylation <- sapply(strsplit(data$Modifications, "\\]; "),
                                     function(x){
@@ -134,8 +138,9 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
                                       })
       }
       else if(peptide_type == "QPpep"){
-        colnames(data)[c(ncol(data) - 1, ncol(data))] <- paste0(colnames(data)[c(ncol(data) - 1, ncol(data))],
-                                                                ".QPpep")
+        extra_info <- grep("sumPSMs|countNum", colnames(data))
+        if(length(extra_info))
+          colnames(data)[extra_info] <- paste0(colnames(data)[extra_info], ".QPpep")
       }
     }
 
