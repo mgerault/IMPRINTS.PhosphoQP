@@ -102,7 +102,7 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
       }
 
       message(paste0(nb_common, " peptides are in common with the phospho data and the QP data. \nHence, ",
-                     round(100*nb_common/nrow(phospho), 2), "% of the phospho peptides don't have a corresponding peptide in the QP data."))
+                     round(1 - (100*nb_common/nrow(phospho)), 2), "% of the phospho peptides don't have a corresponding peptide in the QP data."))
     }
     else{
       peptide_type <- c("phospho", "QPpep")[c("phospho", "QPpep") %in% data_type]
