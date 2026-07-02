@@ -82,6 +82,7 @@ imprints_phoQP_join <- function(phospho = NULL, QPpep = NULL, QP = NULL,
       QPpep <- data_list$QPpep
       colnames(QPpep)[c(ncol(QPpep) - 1, ncol(QPpep))] <- paste0(colnames(QPpep)[c(ncol(QPpep) - 1, ncol(QPpep))],
                                                                        ".QPpep")
+      QPpep$Modifications <- tidyr::replace_na(QPpep$Modifications, "") # NAs prevent correct join with Phospho data
 
       # join phospho and QPpep
       if(method == "full"){
