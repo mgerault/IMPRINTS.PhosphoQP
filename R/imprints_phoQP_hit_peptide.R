@@ -118,7 +118,7 @@ imprints_phoQP_hit_peptide <- function(data, data_diff, ctrl, phospho = TRUE,
   diff_FC_plot <- diff_FC[,c("Annotated.Sequence", "Positions.in.Master.Proteins",
                              "Modifications", "Gene",
                              grep("^\\d{2}|^pval_", colnames(diff_FC), value = TRUE))]
-  colnames(diff_FC_plot) <- gsub("\\d{2}", "F", colnames(diff_FC_plot))
+  colnames(diff_FC_plot) <- gsub("^\\d{2}", "F", colnames(diff_FC_plot))
 
   diff_FC_plot <- diff_FC_plot %>%
     tidyr::gather("treatment", "reading",
